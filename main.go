@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	etcdClient "github.com/coreos/etcd/client"
+	"github.com/jawher/mow.cli"
 	etcdContext "golang.org/x/net/context"
 	"log"
 	"os"
@@ -16,13 +17,7 @@ import (
 )
 
 var (
-	etcdPeers   = flag.String("etcdPeers", "", "Comma-separated list of addresses of etcd endpoints to connect to")
-	device      = flag.String("device", "", "Comma-separated list of addresses of etcd endpoints to connect to")
-	instanceId  = flag.String("instanceId", "", "Comma-separated list of addresses of etcd endpoints to connect to")
-	volId       = flag.String("volId", "", "Comma-separated list of addresses of etcd endpoints to connect to")
-	attach      = flag.Bool("attach", true, "Attach volume.")
-	snapshot    = flag.Bool("snapshot", true, "Snapshot volume.")
-	description = flag.String("description", "", "Snapshot descirption.")
+	etcdPeers = flag.String("etcdPeers", "", "Comma-separated list of addresses of etcd endpoints to connect to")
 )
 
 type Ec2Client struct {
@@ -62,30 +57,49 @@ func getAwsCredentials() (string, string, string) {
 }
 
 func main() {
-	flag.Parse()
+	app := cli.App("coco-ebs-vol-manager", "helper programme to manage AWS Elastic Block Storage")
+	app.Action = func() {
+		log.Println("Running CoCo EBS volume manager")
+	}
+
 	awsKey, awsSecret, awsRegion := getAwsCredentials()
 	awsConfig := &aws.Config{
 		Region:      aws.String(awsRegion),
 		Credentials: credentials.NewStaticCredentials(awsKey, awsSecret, "")}
 	svc := ec2.New(session.New(awsConfig), awsConfig)
 
-	if *attach {
-		if err := attachVol(&Ec2Client{svc}); err != nil {
+	app.Command("attach", "", func(cmd *cli.Cmd) {
+		device := cmd.StringOpt("d device", "", "The device path, e.g. /dev/xvdf")
+		instanceId := cmd.StringOpt("i instance", "", "AWS instance ID")
+		volId := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
+		if err := attachVol(&Ec2Client{svc}, device, instanceId, volId); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)
-	}
+	})
 
-	if *snapshot {
-		if err := createSnapshot(&Ec2Client{svc}); err != nil {
+	app.Command("detach", "", func(cmd *cli.Cmd) {
+		device := cmd.StringOpt("d device", "", "The device path, e.g. /dev/xvdf")
+		instanceId := cmd.StringOpt("i instance", "", "AWS instance ID")
+		volId := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
+		if err := detachVol(&Ec2Client{svc}, device, instanceId, volId); err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	})
+
+	app.Command("snapshot", "", func(cmd *cli.Cmd) {
+		description := cmd.StringOpt("d description", "", "Snapshot description.")
+		volId := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
+		if err := createSnapshot(&Ec2Client{svc}, description, volId); err != nil {
 			log.Fatal(err)
 
 		}
 		os.Exit(0)
-	}
+	})
 }
 
-func attachVol(c *Ec2Client) error {
+func attachVol(c *Ec2Client, device *string, instanceId *string, volId *string) error {
 
 	params := &ec2.AttachVolumeInput{
 		Device:     device,     // Required
@@ -108,7 +122,7 @@ func attachVol(c *Ec2Client) error {
 	return nil
 }
 
-func detachVol(c *Ec2Client) error {
+func detachVol(c *Ec2Client, device *string, instanceId *string, volId *string) error {
 	params := &ec2.DetachVolumeInput{
 		Device:     device,     // Required
 		InstanceId: instanceId, // Required
@@ -129,7 +143,7 @@ func detachVol(c *Ec2Client) error {
 	return nil
 }
 
-func createSnapshot(c *Ec2Client) error {
+func createSnapshot(c *Ec2Client, description *string, volId *string) error {
 	params := &ec2.CreateSnapshotInput{
 		Description: description,
 		VolumeId:    volId,

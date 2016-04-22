@@ -9,17 +9,21 @@ import (
 	"testing"
 )
 
+var (
+	device      = "/some/path"
+	instanceId  = "insantce-id"
+	volId       = "vol-id"
+	description = "snapshot description"
+)
+
 func TestAttachVolShouldExitOnFatal(t *testing.T) {
 	assert := assert.New(t)
-	*device = "/some/path"
-	*instanceId = "insantce-id"
-	*volId = "vol-id"
 
 	m := new(mocks.MockEC2)
 	expectedErr := errors.New("Boom")
 	m.On("AttachVolume", mock.AnythingOfType("*ec2.AttachVolumeInput")).Return(nil, expectedErr)
 
-	err := attachVol(&Ec2Client{m})
+	err := attachVol(&Ec2Client{m}, &device, &instanceId, &volId)
 
 	m.AssertExpectations(t)
 
@@ -28,14 +32,11 @@ func TestAttachVolShouldExitOnFatal(t *testing.T) {
 
 func TestAttachVol(t *testing.T) {
 	assert := assert.New(t)
-	*device = "/some/path"
-	*instanceId = "insantce-id"
-	*volId = "vol-id"
 	m := new(mocks.MockEC2)
 
 	m.On("AttachVolume", mock.AnythingOfType("*ec2.AttachVolumeInput")).Return(nil, nil)
 
-	attachVol(&Ec2Client{m})
+	attachVol(&Ec2Client{m}, &device, &instanceId, &volId)
 
 	m.AssertExpectations(t)
 	avi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.AttachVolumeInput)
@@ -48,15 +49,12 @@ func TestAttachVol(t *testing.T) {
 
 func TestDetachVolShouldExitOnFatal(t *testing.T) {
 	assert := assert.New(t)
-	*device = "/some/path"
-	*instanceId = "insantce-id"
-	*volId = "vol-id"
 
 	m := new(mocks.MockEC2)
 	expectedErr := errors.New("Boom")
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, expectedErr)
 
-	err := detachVol(&Ec2Client{m})
+	err := detachVol(&Ec2Client{m}, &device, &instanceId, &volId)
 
 	m.AssertExpectations(t)
 
@@ -65,14 +63,11 @@ func TestDetachVolShouldExitOnFatal(t *testing.T) {
 
 func TestDetachVol(t *testing.T) {
 	assert := assert.New(t)
-	*device = "/some/path"
-	*instanceId = "insantce-id"
-	*volId = "vol-id"
 	m := new(mocks.MockEC2)
 
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, nil)
 
-	detachVol(&Ec2Client{m})
+	detachVol(&Ec2Client{m}, &device, &instanceId, &volId)
 
 	m.AssertExpectations(t)
 	dvi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.DetachVolumeInput)
@@ -84,16 +79,12 @@ func TestDetachVol(t *testing.T) {
 }
 func TestCreateSnapshotShouldReturnErrorOnFail(t *testing.T) {
 	assert := assert.New(t)
-	*device = "/some/path"
-	*instanceId = "insantce-id"
-	*volId = "vol-id"
-	*description = "snapshot description"
 
 	m := new(mocks.MockEC2)
 	expectedErr := errors.New("Boom")
 	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, expectedErr)
 
-	err := createSnapshot(&Ec2Client{m})
+	err := createSnapshot(&Ec2Client{m}, &description, &volId)
 
 	m.AssertExpectations(t)
 
@@ -102,15 +93,12 @@ func TestCreateSnapshotShouldReturnErrorOnFail(t *testing.T) {
 
 func TestCreateSnapshot(t *testing.T) {
 	assert := assert.New(t)
-	*device = "/some/path"
-	*instanceId = "insantce-id"
-	*volId = "vol-id"
-	*description = "snapshot description"
+
 	m := new(mocks.MockEC2)
 
 	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, nil)
 
-	createSnapshot(&Ec2Client{m})
+	createSnapshot(&Ec2Client{m}, &description, &volId)
 
 	m.AssertExpectations(t)
 	csi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.CreateSnapshotInput)
