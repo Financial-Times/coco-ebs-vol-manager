@@ -21,6 +21,7 @@ var (
 	etcdPeers = flag.String("etcdPeers", "", "Comma-separated list of addresses of etcd endpoints to connect to")
 )
 
+// Ec2Client is a container for the ec2iface.EC2API
 type Ec2Client struct {
 	svc ec2iface.EC2API
 }

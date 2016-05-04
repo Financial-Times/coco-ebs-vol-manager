@@ -1,12 +1,13 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/Financial-Times/coco-ebs-vol-manager/mocks"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/vektra/errors"
-	"testing"
 )
 
 var (
@@ -19,7 +20,7 @@ var (
 func TestAttachVolShouldExitOnFatal(t *testing.T) {
 	assert := assert.New(t)
 
-	m := new(mocks.MockEC2)
+	m := new(mocks.EC2API)
 	expectedErr := errors.New("Boom")
 	m.On("AttachVolume", mock.AnythingOfType("*ec2.AttachVolumeInput")).Return(nil, expectedErr)
 
@@ -32,7 +33,7 @@ func TestAttachVolShouldExitOnFatal(t *testing.T) {
 
 func TestAttachVol(t *testing.T) {
 	assert := assert.New(t)
-	m := new(mocks.MockEC2)
+	m := new(mocks.EC2API)
 
 	m.On("AttachVolume", mock.AnythingOfType("*ec2.AttachVolumeInput")).Return(nil, nil)
 
@@ -50,7 +51,7 @@ func TestAttachVol(t *testing.T) {
 func TestDetachVolShouldExitOnFatal(t *testing.T) {
 	assert := assert.New(t)
 
-	m := new(mocks.MockEC2)
+	m := new(mocks.EC2API)
 	expectedErr := errors.New("Boom")
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, expectedErr)
 
@@ -63,7 +64,7 @@ func TestDetachVolShouldExitOnFatal(t *testing.T) {
 
 func TestDetachVol(t *testing.T) {
 	assert := assert.New(t)
-	m := new(mocks.MockEC2)
+	m := new(mocks.EC2API)
 
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, nil)
 
@@ -80,7 +81,7 @@ func TestDetachVol(t *testing.T) {
 func TestCreateSnapshotShouldReturnErrorOnFail(t *testing.T) {
 	assert := assert.New(t)
 
-	m := new(mocks.MockEC2)
+	m := new(mocks.EC2API)
 	expectedErr := errors.New("Boom")
 	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, expectedErr)
 
@@ -94,7 +95,7 @@ func TestCreateSnapshotShouldReturnErrorOnFail(t *testing.T) {
 func TestCreateSnapshot(t *testing.T) {
 	assert := assert.New(t)
 
-	m := new(mocks.MockEC2)
+	m := new(mocks.EC2API)
 
 	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, nil)
 
