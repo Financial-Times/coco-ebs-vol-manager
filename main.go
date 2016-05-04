@@ -2,6 +2,11 @@ package main
 
 import (
 	"flag"
+	"log"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -10,10 +15,6 @@ import (
 	etcdClient "github.com/coreos/etcd/client"
 	"github.com/jawher/mow.cli"
 	etcdContext "golang.org/x/net/context"
-	"log"
-	"os"
-	"strings"
-	"time"
 )
 
 var (
@@ -25,6 +26,14 @@ type Ec2Client struct {
 }
 
 func getAwsCredentials() (string, string, string) {
+
+	key := os.Getenv("AWS_ACCESS_KEY_ID")
+	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	region := os.Getenv("AWS_DEFAULT_REGION")
+
+	if key != "" && secret != "" && region != "" {
+		return key, secret, region
+	}
 	cfg := etcdClient.Config{
 		Endpoints:               strings.Split(*etcdPeers, ","),
 		HeaderTimeoutPerRequest: 10 * time.Second,
@@ -39,17 +48,17 @@ func getAwsCredentials() (string, string, string) {
 
 	awsKey, err := kapi.Get(etcdContext.Background(), "/ft/_credentials/aws/aws_access_key_id", nil)
 	if err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
 
 	awsSecret, err := kapi.Get(etcdContext.Background(), "/ft/_credentials/aws/aws_secret_access_key", nil)
 	if err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
 
 	awsRegion, err := kapi.Get(etcdContext.Background(), "/ft/config/aws_region", nil)
 	if err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
 
 	return awsKey.Node.Value, awsSecret.Node.Value, awsRegion.Node.Value
