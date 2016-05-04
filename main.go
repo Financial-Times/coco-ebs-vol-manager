@@ -80,9 +80,9 @@ func main() {
 
 	app.Command("attach", "", func(cmd *cli.Cmd) {
 		device := cmd.StringOpt("d device", "", "The device path, e.g. /dev/xvdf")
-		instanceId := cmd.StringOpt("i instance", "", "AWS instance ID")
-		volId := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
-		if err := attachVol(&Ec2Client{svc}, device, instanceId, volId); err != nil {
+		instanceID := cmd.StringOpt("i instance", "", "AWS instance ID")
+		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
+		if err := attachVol(&Ec2Client{svc}, device, instanceID, volID); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)
@@ -90,9 +90,9 @@ func main() {
 
 	app.Command("detach", "", func(cmd *cli.Cmd) {
 		device := cmd.StringOpt("d device", "", "The device path, e.g. /dev/xvdf")
-		instanceId := cmd.StringOpt("i instance", "", "AWS instance ID")
-		volId := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
-		if err := detachVol(&Ec2Client{svc}, device, instanceId, volId); err != nil {
+		instanceID := cmd.StringOpt("i instance", "", "AWS instance ID")
+		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
+		if err := detachVol(&Ec2Client{svc}, device, instanceID, volID); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)
@@ -100,8 +100,8 @@ func main() {
 
 	app.Command("snapshot", "", func(cmd *cli.Cmd) {
 		description := cmd.StringOpt("d description", "", "Snapshot description.")
-		volId := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
-		if err := createSnapshot(&Ec2Client{svc}, description, volId); err != nil {
+		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
+		if err := createSnapshot(&Ec2Client{svc}, description, volID); err != nil {
 			log.Fatal(err)
 
 		}
@@ -109,12 +109,12 @@ func main() {
 	})
 }
 
-func attachVol(c *Ec2Client, device *string, instanceId *string, volId *string) error {
+func attachVol(c *Ec2Client, device *string, instanceID *string, volID *string) error {
 
 	params := &ec2.AttachVolumeInput{
 		Device:     device,     // Required
-		InstanceId: instanceId, // Required
-		VolumeId:   volId,      // Required
+		InstanceId: instanceID, // Required
+		VolumeId:   volID,      // Required
 		DryRun:     aws.Bool(false),
 	}
 
@@ -132,11 +132,11 @@ func attachVol(c *Ec2Client, device *string, instanceId *string, volId *string) 
 	return nil
 }
 
-func detachVol(c *Ec2Client, device *string, instanceId *string, volId *string) error {
+func detachVol(c *Ec2Client, device *string, instanceID *string, volID *string) error {
 	params := &ec2.DetachVolumeInput{
 		Device:     device,     // Required
-		InstanceId: instanceId, // Required
-		VolumeId:   volId,      // Required
+		InstanceId: instanceID, // Required
+		VolumeId:   volID,      // Required
 		DryRun:     aws.Bool(false),
 	}
 
@@ -153,10 +153,10 @@ func detachVol(c *Ec2Client, device *string, instanceId *string, volId *string) 
 	return nil
 }
 
-func createSnapshot(c *Ec2Client, description *string, volId *string) error {
+func createSnapshot(c *Ec2Client, description *string, volID *string) error {
 	params := &ec2.CreateSnapshotInput{
 		Description: description,
-		VolumeId:    volId,
+		VolumeId:    volID,
 		DryRun:      aws.Bool(false),
 	}
 

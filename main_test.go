@@ -12,8 +12,8 @@ import (
 
 var (
 	device      = "/some/path"
-	instanceId  = "insantce-id"
-	volId       = "vol-id"
+	instanceID  = "insantce-id"
+	volID       = "vol-id"
 	description = "snapshot description"
 )
 
@@ -24,7 +24,7 @@ func TestAttachVolShouldExitOnFatal(t *testing.T) {
 	expectedErr := errors.New("Boom")
 	m.On("AttachVolume", mock.AnythingOfType("*ec2.AttachVolumeInput")).Return(nil, expectedErr)
 
-	err := attachVol(&Ec2Client{m}, &device, &instanceId, &volId)
+	err := attachVol(&Ec2Client{m}, &device, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 
@@ -37,7 +37,7 @@ func TestAttachVol(t *testing.T) {
 
 	m.On("AttachVolume", mock.AnythingOfType("*ec2.AttachVolumeInput")).Return(nil, nil)
 
-	attachVol(&Ec2Client{m}, &device, &instanceId, &volId)
+	attachVol(&Ec2Client{m}, &device, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 	avi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.AttachVolumeInput)
@@ -55,7 +55,7 @@ func TestDetachVolShouldExitOnFatal(t *testing.T) {
 	expectedErr := errors.New("Boom")
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, expectedErr)
 
-	err := detachVol(&Ec2Client{m}, &device, &instanceId, &volId)
+	err := detachVol(&Ec2Client{m}, &device, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 
@@ -68,7 +68,7 @@ func TestDetachVol(t *testing.T) {
 
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, nil)
 
-	detachVol(&Ec2Client{m}, &device, &instanceId, &volId)
+	detachVol(&Ec2Client{m}, &device, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 	dvi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.DetachVolumeInput)
@@ -85,7 +85,7 @@ func TestCreateSnapshotShouldReturnErrorOnFail(t *testing.T) {
 	expectedErr := errors.New("Boom")
 	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, expectedErr)
 
-	err := createSnapshot(&Ec2Client{m}, &description, &volId)
+	err := createSnapshot(&Ec2Client{m}, &description, &volID)
 
 	m.AssertExpectations(t)
 
@@ -99,7 +99,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, nil)
 
-	createSnapshot(&Ec2Client{m}, &description, &volId)
+	createSnapshot(&Ec2Client{m}, &description, &volID)
 
 	m.AssertExpectations(t)
 	csi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.CreateSnapshotInput)
