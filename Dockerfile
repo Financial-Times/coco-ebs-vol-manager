@@ -9,8 +9,7 @@ RUN apk add --update git go                                                 \
   && cd $PROJECT_PATH                                                       \
   && go get ./...                                                           \
   && go build                                                               \
-  && mv coco-ebs-vol-manager /coco-ebs-vol-manager                          \
+  && mv coco-ebs-vol-manager /app                                           \
   && apk del go git                                                         \
   && rm -rf $GOPATH /var/cache/apk/*
-ENTRYPOINT ["coco-ebs-vol-manager"]
-CMD ["version"]
+CMD exec /app
