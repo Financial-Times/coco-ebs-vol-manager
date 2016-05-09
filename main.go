@@ -103,44 +103,47 @@ func main() {
 		}
 	})
 
-	app.Command("snapshot", "Creates a snapshot of a volume", func(cmd *cli.Cmd) {
-		volID := cmd.StringOpt("v volumeId", "someId", "VolumeID of EBS to snapshot.")
-		now := time.Now()
-		defDesc := fmt.Sprintf("Snapshot of %s created on %v", *volID, now)
-		description := cmd.StringOpt("d description", defDesc, "Snapshot description.")
-		tags := cmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the snapshot")
-		//tags := cmd.StringOpt("tags", "", "A set of tags to set on the snapshot")
-		cmd.Spec = "-v [-d]"
-		cmd.Action = func() {
-			if err := createSnapshot(newEc2Client(), description, volID, tags); err != nil {
-				log.Fatal(err)
-
+	app.Command("volumes", "find volumes", func(cmd *cli.Cmd) {
+		cmd.Command("find", "Find a list of volumeIds based on tag name,value pairs", func(subCmd *cli.Cmd) {
+			tags := subCmd.StringArg("TAGS", "tag1=value1", "A set of comma seperated tags used to locate the volume")
+			subCmd.Spec = "TAGS"
+			subCmd.Action = func() {
+				volIDs, err := findVolumes(newEc2Client(), tags)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf("%v\n", strings.Join(volIDs, ","))
 			}
-		}
+		})
 	})
 
-	app.Command("find-volumes", "Find a list of volumeIds based on tag name,value pairs", func(cmd *cli.Cmd) {
-		tags := cmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the volume")
-		cmd.Spec = "-t"
-		cmd.Action = func() {
-			volIDs, err := findVolumes(newEc2Client(), tags)
-			if err != nil {
-				log.Fatal(err)
+	app.Command("snapshots", "Create & Find snapshots", func(cmd *cli.Cmd) {
+		cmd.Command("find", "Find a list of volumeIds based on tag name,value pairs", func(subCmd *cli.Cmd) {
+			tags := subCmd.StringArg("TAGS", "tag1=value1", "A set of comma seperated tags used to locate the volume")
+			subCmd.Spec = "TAGS"
+			subCmd.Action = func() {
+				snapshotIDs, err := findSnapshots(newEc2Client(), tags)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf("%v\n", strings.Join(snapshotIDs, ","))
 			}
-			fmt.Printf("%v\n", strings.Join(volIDs, ","))
-		}
-	})
+		})
+		cmd.Command("create", "Creates a snapshot of a volume", func(subCmd *cli.Cmd) {
+			volID := subCmd.StringArg("ID", "vol-b5e5c80b", "VolumeID to snapshot.")
+			now := time.Now()
+			defDesc := fmt.Sprintf("Snapshot of %s created on %v", *volID, now)
+			description := subCmd.StringOpt("d description", defDesc, "Snapshot description.")
+			tags := subCmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the snapshot")
+			//tags := cmd.StringOpt("tags", "", "A set of tags to set on the snapshot")
+			subCmd.Spec = "ID [-d] [-t]"
+			subCmd.Action = func() {
+				if err := createSnapshot(newEc2Client(), description, volID, tags); err != nil {
+					log.Fatal(err)
 
-	app.Command("find-snapshots", "Find snapshot IDs based on tag name,value pairs", func(cmd *cli.Cmd) {
-		tags := cmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the volume")
-		cmd.Spec = "-t"
-		cmd.Action = func() {
-			snapshotIDs, err := findSnapshots(newEc2Client(), tags)
-			if err != nil {
-				log.Fatal(err)
+				}
 			}
-			fmt.Printf("%v\n", strings.Join(snapshotIDs, ","))
-		}
+		})
 	})
 
 	app.Command("tags", "Get, set or remove tags on resorces", func(cmd *cli.Cmd) {
@@ -286,7 +289,7 @@ func findSnapshots(c *Ec2Client, tagOpts *string) (ids []string, err error) {
 		Filters: buildFilters(tagOpts),
 		DryRun:  aws.Bool(false),
 	}
-	fmt.Printf("Look for %+v", params)
+	// fmt.Printf("Look for %+v", params)
 	resp, err := c.svc.DescribeSnapshots(&params)
 	if err != nil {
 		return nil, err
