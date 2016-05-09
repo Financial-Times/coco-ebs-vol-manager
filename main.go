@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -66,47 +67,235 @@ func getAwsCredentials() (string, string, string) {
 
 }
 
-func main() {
-	app := cli.App("coco-ebs-vol-manager", "helper programme to manage AWS Elastic Block Storage")
-	app.Action = func() {
-		log.Println("Running CoCo EBS volume manager")
-	}
-
+func newEc2Client() *Ec2Client {
 	awsKey, awsSecret, awsRegion := getAwsCredentials()
 	awsConfig := &aws.Config{
 		Region:      aws.String(awsRegion),
 		Credentials: credentials.NewStaticCredentials(awsKey, awsSecret, "")}
-	svc := ec2.New(session.New(awsConfig), awsConfig)
+	client := Ec2Client{ec2.New(session.New(awsConfig), awsConfig)}
+	return &client
+}
 
-	app.Command("attach", "", func(cmd *cli.Cmd) {
+func main() {
+	app := cli.App("coco-ebs-vol-manager", "helper programme to manage AWS Elastic Block Storage")
+
+	app.Command("attach", "Attaches a volume to an instance as a new device", func(cmd *cli.Cmd) {
+		device := cmd.StringOpt("d device", "/dev/xvdf", "The device path, e.g. /dev/xvdf")
+		instanceID := cmd.StringOpt("i instance", "", "AWS instance ID")
+		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to attach")
+		cmd.Spec = "-v -i -d"
+		cmd.Action = func() {
+			if err := attachVol(newEc2Client(), device, instanceID, volID); err != nil {
+				log.Fatal(err)
+			}
+		}
+	})
+
+	app.Command("detach", "Detaches a volume from an instance", func(cmd *cli.Cmd) {
 		device := cmd.StringOpt("d device", "", "The device path, e.g. /dev/xvdf")
 		instanceID := cmd.StringOpt("i instance", "", "AWS instance ID")
-		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
-		if err := attachVol(&Ec2Client{svc}, device, instanceID, volID); err != nil {
-			log.Fatal(err)
+		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to detach")
+		cmd.Spec = "-v -i -d"
+		cmd.Action = func() {
+			if err := detachVol(newEc2Client(), device, instanceID, volID); err != nil {
+				log.Fatal(err)
+			}
 		}
-		os.Exit(0)
 	})
 
-	app.Command("detach", "", func(cmd *cli.Cmd) {
-		device := cmd.StringOpt("d device", "", "The device path, e.g. /dev/xvdf")
-		instanceID := cmd.StringOpt("i instance", "", "AWS instance ID")
-		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
-		if err := detachVol(&Ec2Client{svc}, device, instanceID, volID); err != nil {
-			log.Fatal(err)
+	app.Command("snapshot", "Creates a snapshot of a volume", func(cmd *cli.Cmd) {
+		volID := cmd.StringOpt("v volumeId", "someId", "VolumeID of EBS to snapshot.")
+		now := time.Now()
+		defDesc := fmt.Sprintf("Snapshot of %s created on %v", *volID, now)
+		description := cmd.StringOpt("d description", defDesc, "Snapshot description.")
+		tags := cmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the snapshot")
+		//tags := cmd.StringOpt("tags", "", "A set of tags to set on the snapshot")
+		cmd.Spec = "-v [-d]"
+		cmd.Action = func() {
+			if err := createSnapshot(newEc2Client(), description, volID, tags); err != nil {
+				log.Fatal(err)
+
+			}
 		}
-		os.Exit(0)
 	})
 
-	app.Command("snapshot", "", func(cmd *cli.Cmd) {
-		description := cmd.StringOpt("d description", "", "Snapshot description.")
-		volID := cmd.StringOpt("v volumeId", "", "VolumeID of EBS to snapshot.")
-		if err := createSnapshot(&Ec2Client{svc}, description, volID); err != nil {
-			log.Fatal(err)
-
+	app.Command("find-volumes", "Find a list of volumeIds based on tag name,value pairs", func(cmd *cli.Cmd) {
+		tags := cmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the volume")
+		cmd.Spec = "-t"
+		cmd.Action = func() {
+			volIDs, err := findVolumes(newEc2Client(), tags)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("%v\n", strings.Join(volIDs, ","))
 		}
-		os.Exit(0)
 	})
+
+	app.Command("find-snapshots", "Find snapshot IDs based on tag name,value pairs", func(cmd *cli.Cmd) {
+		tags := cmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the volume")
+		cmd.Spec = "-t"
+		cmd.Action = func() {
+			snapshotIDs, err := findSnapshots(newEc2Client(), tags)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("%v\n", strings.Join(snapshotIDs, ","))
+		}
+	})
+
+	app.Command("tags", "Get, set or remove tags on resorces", func(cmd *cli.Cmd) {
+		cmd.Command("get", "Gets the set of tags on a resouce", func(subCmd *cli.Cmd) {
+			resourceID := subCmd.StringArg("ID", "id12342", "The resourceId of the resource to be modified")
+			subCmd.Spec = "ID"
+			subCmd.Action = func() {
+				tags, err := getTags(newEc2Client(), resourceID)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf("%v\n", strings.Join(tags, ","))
+			}
+		})
+		cmd.Command("set", "Sets a set of tags on a resouce", func(subCmd *cli.Cmd) {
+			resourceID := subCmd.StringArg("ID", "", "The resourceId of the resource to be modified")
+			tags := subCmd.StringArg("TAGS", "name=value", "The list of tags to set")
+			subCmd.Spec = "ID TAGS"
+			subCmd.Action = func() {
+				if err := setTags(newEc2Client(), resourceID, tags); err != nil {
+					log.Fatal(err)
+				}
+			}
+		})
+		cmd.Command("rm", "Removes a set of tags on a resouce", func(subCmd *cli.Cmd) {
+			resourceID := subCmd.StringArg("ID", "", "The resourceId of the resource to be modified")
+			tags := subCmd.StringArg("TAGS", "name1,name2", "The list of tags to remove")
+			subCmd.Spec = "ID TAGS"
+			subCmd.Action = func() {
+				if err := removeTags(newEc2Client(), resourceID, tags); err != nil {
+					log.Fatal(err)
+				}
+			}
+		})
+	})
+
+	app.Run(os.Args)
+}
+
+func removeTags(c *Ec2Client, resourceID *string, tags *string) error {
+	params := ec2.DeleteTagsInput{
+		Resources: []*string{resourceID},
+		Tags:      buildTags(tags),
+	}
+	_, err := c.svc.DeleteTags(&params)
+	return err
+}
+
+func buildTags(tagOpts *string) []*ec2.Tag {
+	tagList := strings.Split(*tagOpts, ",")
+	tags := make([]*ec2.Tag, len(tagList))
+	for i, tag := range tagList {
+		if strings.Contains(tag, "=") {
+			splitPair := strings.Split(tag, "=")
+			tags[i] = &ec2.Tag{
+				Key:   aws.String(splitPair[0]),
+				Value: aws.String(splitPair[1]),
+			}
+		} else {
+			tags[i] = &ec2.Tag{
+				Key: aws.String(tag),
+			}
+		}
+	}
+	return tags
+}
+
+func setTags(c *Ec2Client, resourceID *string, tags *string) error {
+	params := ec2.CreateTagsInput{
+		Resources: []*string{resourceID},
+		Tags:      buildTags(tags),
+		DryRun:    aws.Bool(false),
+	}
+	// fmt.Printf("params: %+v\n", params)
+	_, err := c.svc.CreateTags(&params)
+	return err
+}
+
+func getTags(c *Ec2Client, resourceID *string) ([]string, error) {
+	filter := &ec2.Filter{
+		Name: aws.String("resource-id"),
+		Values: []*string{
+			resourceID,
+		},
+	}
+	filters := []*ec2.Filter{
+		filter,
+	}
+	params := ec2.DescribeTagsInput{
+		Filters: filters,
+		DryRun:  aws.Bool(false),
+	}
+	// fmt.Printf("params: %+v\n", params)
+	resp, err := c.svc.DescribeTags(&params)
+	if err != nil {
+		return nil, err
+	}
+	tags := resp.Tags
+	// fmt.Printf("Resp: %v\n", resp.String())
+	tagList := make([]string, len(tags))
+	for i, tag := range tags {
+		// fmt.Println(tag.String())
+		tagList[i] = fmt.Sprintf("%v=%v", *tag.Key, *tag.Value)
+	}
+	return tagList, nil
+}
+
+func buildFilters(tagOpts *string) []*ec2.Filter {
+	tagPairs := strings.Split(*tagOpts, ",")
+	filters := make([]*ec2.Filter, len(tagPairs))
+	for i, tagPair := range tagPairs {
+		splitPair := strings.Split(tagPair, "=")
+		filters[i] = &ec2.Filter{
+			Name: aws.String(fmt.Sprintf("tag:%s", splitPair[0])),
+			Values: []*string{
+				aws.String(fmt.Sprintf("%s", splitPair[1])),
+			},
+		}
+	}
+	return filters
+}
+
+func findVolumes(c *Ec2Client, tagOpts *string) (ids []string, err error) {
+	//aws ec2 describe-volumes --filters="Name=tag:coco-environment-tag,Values=dgem"
+	params := ec2.DescribeVolumesInput{
+		Filters: buildFilters(tagOpts),
+		DryRun:  aws.Bool(false),
+	}
+	resp, err := c.svc.DescribeVolumes(&params)
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Printf("String %+v \n Snapshot %+v\n", resp.String(), resp.Volumes)
+	ids = make([]string, len(resp.Volumes))
+	for i, vol := range resp.Volumes {
+		ids[i] = *vol.VolumeId
+	}
+	return ids, nil
+}
+
+func findSnapshots(c *Ec2Client, tagOpts *string) (ids []string, err error) {
+	params := ec2.DescribeSnapshotsInput{
+		Filters: buildFilters(tagOpts),
+		DryRun:  aws.Bool(false),
+	}
+	fmt.Printf("Look for %+v", params)
+	resp, err := c.svc.DescribeSnapshots(&params)
+	if err != nil {
+		return nil, err
+	}
+	ids = make([]string, len(resp.Snapshots))
+	for i, snapshot := range resp.Snapshots {
+		ids[i] = *snapshot.SnapshotId
+	}
+	return ids, nil
 }
 
 func attachVol(c *Ec2Client, device *string, instanceID *string, volID *string) error {
@@ -153,7 +342,7 @@ func detachVol(c *Ec2Client, device *string, instanceID *string, volID *string) 
 	return nil
 }
 
-func createSnapshot(c *Ec2Client, description *string, volID *string) error {
+func createSnapshot(c *Ec2Client, description *string, volID *string, tags *string) error {
 	params := &ec2.CreateSnapshotInput{
 		Description: description,
 		VolumeId:    volID,
