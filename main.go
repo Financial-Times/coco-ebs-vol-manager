@@ -135,12 +135,12 @@ func main() {
 			defDesc := fmt.Sprintf("Snapshot of %s created on %v", *volID, now)
 			description := subCmd.StringOpt("d description", defDesc, "Snapshot description.")
 			tags := subCmd.StringOpt("t tags", "someId", "A set of comma seperated tags used to locate the snapshot")
-			//tags := cmd.StringOpt("tags", "", "A set of tags to set on the snapshot")
 			subCmd.Spec = "ID [-d] [-t]"
 			subCmd.Action = func() {
-				if err := createSnapshot(newEc2Client(), description, volID, tags); err != nil {
+				if id, err := createSnapshot(newEc2Client(), description, volID, tags); err != nil {
 					log.Fatal(err)
-
+				} else {
+					fmt.Println(id)
 				}
 			}
 		})
@@ -339,13 +339,11 @@ func detachVol(c *Ec2Client, device *string, instanceID *string, volID *string) 
 		log.Println(err.Error())
 		return err
 	}
-
-	// Pretty-print the response data.
 	log.Println(resp)
 	return nil
 }
 
-func createSnapshot(c *Ec2Client, description *string, volID *string, tags *string) error {
+func createSnapshot(c *Ec2Client, description *string, volID *string, tags *string) (string, error) {
 	params := &ec2.CreateSnapshotInput{
 		Description: description,
 		VolumeId:    volID,
@@ -357,10 +355,8 @@ func createSnapshot(c *Ec2Client, description *string, volID *string, tags *stri
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		log.Println(err.Error())
-		return err
+		return "", err
 	}
-
-	// Pretty-print the response data.
-	log.Println(resp)
-	return nil
+	// log.Printf("%+v\n", resp)
+	return *resp.SnapshotId, nil
 }

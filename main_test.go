@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Financial-Times/coco-ebs-vol-manager/mocks"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,6 +16,7 @@ var (
 	instanceID  = "insantce-id"
 	volID       = "vol-id"
 	description = "snapshot description"
+	tags        = "tag1=value1"
 )
 
 func TestAttachVolShouldExitOnFatal(t *testing.T) {
@@ -85,11 +87,12 @@ func TestCreateSnapshotShouldReturnErrorOnFail(t *testing.T) {
 	expectedErr := errors.New("Boom")
 	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, expectedErr)
 
-	err := createSnapshot(&Ec2Client{m}, &description, &volID)
+	id, err := createSnapshot(&Ec2Client{m}, &description, &volID, &tags)
 
 	m.AssertExpectations(t)
 
 	assert.Equal(expectedErr, err)
+	assert.NotNil(id)
 }
 
 func TestCreateSnapshot(t *testing.T) {
@@ -97,9 +100,11 @@ func TestCreateSnapshot(t *testing.T) {
 
 	m := new(mocks.EC2API)
 
-	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(nil, nil)
+	resp := ec2.Snapshot{SnapshotId: aws.String("snap9999")}
 
-	createSnapshot(&Ec2Client{m}, &description, &volID)
+	m.On("CreateSnapshot", mock.AnythingOfType("*ec2.CreateSnapshotInput")).Return(&resp, nil)
+
+	createSnapshot(&Ec2Client{m}, &description, &volID, &tags)
 
 	m.AssertExpectations(t)
 	csi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.CreateSnapshotInput)
