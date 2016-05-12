@@ -7,13 +7,13 @@ enviorn=`etcdctl get /ft/config/environment_tag`
 region=`etcdctl get /ft/config/aws_region`
 instanceId=`curl -s http://169.254.169.254/latest/meta-data/instance-id`
 availZone=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
-hostIP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`
+hostIP=`curl -s http://169.254.169.254/latest/meta-data/local-ipv4`
 
 echo "PRE-START for $1 on $enviorn in $region ($availZone $hostIP $instanceId)"
 
 docker pull coco/coco-ebs-vol-manager:latest
 
-volumeId=`docker run coco/coco-ebs-vol-manager ./coco-ebs-vol-manager -e=${hostIP}:2379 volumes find -t coco-environment-tag=${enviorn},LATEST="",store=$serviceId | jq -r '[.Volumes[0].VolumeId]'`
+volumeId=`docker run coco/coco-ebs-vol-manager ./coco-ebs-vol-manager -e=http://${hostIP}:2379 volumes find -t coco-environment-tag=${enviorn},LATEST="",store=$serviceId | jq -r '[.Volumes[0].VolumeId]'`
 
 lastDevice=$(ls -1 /dev/xvd* | sort -r | head -1 )
 lastLetter="${lastDevice: -1}"
