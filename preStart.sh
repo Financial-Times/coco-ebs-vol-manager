@@ -15,11 +15,11 @@ echo "PRE-START for $1 on $enviorn in $region ($availZone $hostIP $instanceId)"
 
 docker pull coco/coco-ebs-vol-manager:latest
 
-volumeId=`docker run -e="AWS_ACCESS_KEY_ID=$key" -e="AWS_SECRET_ACCESS_KEY=$secret" -e="AWS_DEFAULT_REGION=$region" coco/coco-ebs-vol-manager ./coco-ebs-vol-manager -e=http://${hostIP}:2379 volumes find -t coco-environment-tag=${enviorn},LATEST="",store=$serviceId | jq -r '[.Volumes[0].VolumeId]'`
+volumeId=`docker run -e="AWS_ACCESS_KEY_ID=$key" -e="AWS_SECRET_ACCESS_KEY=$secret" -e="AWS_DEFAULT_REGION=$region" coco/coco-ebs-vol-manager ./coco-ebs-vol-manager -e=http://${hostIP}:2379 volumes find -t coco-environment-tag=${enviorn},LATEST="",store=$serviceId | jq -r '.Volumes[0].VolumeId'`
 
 lastDevice=$(ls -1 /dev/xvd* | sort -r | head -1 )
 lastLetter="${lastDevice: -1}"
 nextLetter=$(echo "$lastLetter" | tr "a-z" "b-za")
 nextDrive="/dev/xvd${nextLetter}"
 
-echo "Persistent store for ${service} on ${instanceId} may use ${volumeId} on ${nextDrive}"
+echo "Persistent store for ${serviceId} on ${instanceId} may use ${volumeId} on ${nextDrive}"
