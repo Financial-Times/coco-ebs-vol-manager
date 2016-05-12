@@ -5,10 +5,10 @@
 
 service=%p-%i
 metadata='http://169.254.169.254/latest/meta-data/'
-echo "Running prestart operation for ${service}"
+echo "Running prestart operation for ${service} $0 $1"
 
 docker pull coco/coco-ebs-vol-manager:latest
 
-instance-id=`curl -s ${metadata}/instance-id`
+instanceId=`curl -s ${metadata}/instance-id`
 
-echo "Setup persistent store for ${service} on ${instance-id}"
+echo "Setup persistent store for ${service} on ${instanceId}"
