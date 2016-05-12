@@ -11,7 +11,7 @@ instanceId=`curl -s http://169.254.169.254/latest/meta-data/instance-id`
 availZone=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`
 hostIP=`curl -s http://169.254.169.254/latest/meta-data/local-ipv4`
 
-echo "PRE-START for $1 on $enviorn in $region ($availZone $hostIP $instanceId)"
+echo "PRE-START for $serviceId on $enviorn in $region ($availZone $hostIP $instanceId)"
 
 docker pull coco/coco-ebs-vol-manager:latest
 
