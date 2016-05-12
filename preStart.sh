@@ -23,3 +23,8 @@ nextLetter=$(echo "$lastLetter" | tr "a-z" "b-za")
 nextDrive="/dev/xvd${nextLetter}"
 
 echo "Persistent store for ${serviceId} on ${instanceId} may use ${volumeId} on ${nextDrive}"
+
+if [ "null" -eq "$volumeId"]
+then
+  echo ="No volume found"
+fi
