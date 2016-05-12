@@ -5,7 +5,7 @@
 
 service=%p-%i
 metadata='http://169.254.169.254/latest/meta-data/'
-echo "Running prestart operation for ${service} $0 $1"
+echo "Running prestart operation for ${service} $SERVICE_ID $0 $1"
 
 docker pull coco/coco-ebs-vol-manager:latest
 
