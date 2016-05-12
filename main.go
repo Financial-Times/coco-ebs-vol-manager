@@ -55,6 +55,7 @@ func getAwsCredentials() (string, string, string) {
 		HeaderTimeoutPerRequest: 10 * time.Second,
 	}
 
+	log.Println(*etcdPeers)
 	etcd, err := etcdClient.New(cfg)
 	if err != nil {
 		log.Fatal(err)
