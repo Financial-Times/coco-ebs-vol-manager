@@ -26,7 +26,7 @@ func TestAttachVolShouldExitOnFatal(t *testing.T) {
 	expectedErr := errors.New("Boom")
 	m.On("AttachVolume", mock.AnythingOfType("*ec2.AttachVolumeInput")).Return(nil, expectedErr)
 
-	err := attachVol(&Ec2Client{m}, &device, &instanceID, &volID)
+	_, err := attachVol(&Ec2Client{m}, &device, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 
@@ -57,7 +57,7 @@ func TestDetachVolShouldExitOnFatal(t *testing.T) {
 	expectedErr := errors.New("Boom")
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, expectedErr)
 
-	err := detachVol(&Ec2Client{m}, &instanceID, &volID)
+	_, err := detachVol(&Ec2Client{m}, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 

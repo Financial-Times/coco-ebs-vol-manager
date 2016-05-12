@@ -115,9 +115,11 @@ func main() {
 			volID := subCmd.String(volumeOpt)
 			subCmd.Spec = "-v -i -d"
 			subCmd.Action = func() {
-				if err := attachVol(newEc2Client(), device, instanceID, volID); err != nil {
+				resp, err := attachVol(newEc2Client(), device, instanceID, volID)
+				if err != nil {
 					log.Fatal(err)
 				}
+				fmt.Println(resp)
 			}
 		})
 		cmd.Command("detach", "Detaches a volume from an instance", func(subCmd *cli.Cmd) {
@@ -125,9 +127,11 @@ func main() {
 			volID := subCmd.String(volumeOpt)
 			subCmd.Spec = "-v [-i]"
 			subCmd.Action = func() {
-				if err := detachVol(newEc2Client(), instanceID, volID); err != nil {
+				resp, err := detachVol(newEc2Client(), instanceID, volID)
+				if err != nil {
 					log.Fatal(err)
 				}
+				fmt.Println(resp)
 			}
 		})
 		cmd.Command("create", "Creates a volume, optionally from a snapshot and tags it", func(subCmd *cli.Cmd) {
@@ -200,9 +204,11 @@ func main() {
 			tags := subCmd.String(tagOpt)
 			subCmd.Spec = "ID -t"
 			subCmd.Action = func() {
-				if err := removeTags(newEc2Client(), resourceID, tags); err != nil {
+				resp, err := removeTags(newEc2Client(), resourceID, tags)
+				if err != nil {
 					log.Fatal(err)
 				}
+				fmt.Println(resp)
 			}
 		})
 	})
@@ -337,7 +343,7 @@ func findSnapshots(c *Ec2Client, tagOpts *string) (string, error) {
 	return string(res), nil
 }
 
-func attachVol(c *Ec2Client, device *string, instanceID *string, volID *string) error {
+func attachVol(c *Ec2Client, device *string, instanceID *string, volID *string) (string, error) {
 
 	params := &ec2.AttachVolumeInput{
 		Device:     device,     // Required
@@ -352,7 +358,7 @@ func attachVol(c *Ec2Client, device *string, instanceID *string, volID *string) 
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		log.Println(err.Error())
-		return err
+		return nought, err
 	}
 	res, err := json.Marshal(resp)
 	return string(res), err
