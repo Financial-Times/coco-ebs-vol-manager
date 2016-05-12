@@ -24,7 +24,7 @@ nextDrive="/dev/xvd${nextLetter}"
 
 echo "Persistent store for ${serviceId} on ${instanceId} may use ${volumeId} on ${nextDrive}"
 
-if [ "null" -eq "$volumeId"]
+if [ "null" -eq "$volumeId" ]
 then
   echo ="No volume found"
 fi
