@@ -15,10 +15,10 @@ echo "PRE-START for $1 on $enviorn in $region ($availZone)"
 
 docker pull coco/coco-ebs-vol-manager:latest
 
-volumeId=`docker run -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}" coco/coco-ebs-vol-manager ./coco-ebs-vol-manager volumes find -t coco-environment-tag=${enviorn},LATEST="",store=$serviceId | jq -r '[.Volumes[0].VolumeId]'`
+volumeId=`docker run coco/coco-ebs-vol-manager ./coco-ebs-vol-manager -e=http://127.0.0.1:2379 volumes find -t coco-environment-tag=${enviorn},LATEST="",store=$serviceId | jq -r '[.Volumes[0].VolumeId]'`
 
 lastDevice=$(ls -1 /dev/xvd* | sort -r | head -1 )
-lastLetter="${lastDevice: -2}"
+lastLetter="${lastDevice: -1}"
 nextLetter=$(echo "$lastLetter" | tr "a-z" "b-za")
 nextDrive="/dev/xvd${nextLetter}"
 
