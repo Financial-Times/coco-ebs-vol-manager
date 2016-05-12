@@ -18,7 +18,7 @@ docker pull coco/coco-ebs-vol-manager:latest
 volumeId=`docker run -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" -e "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}" coco/coco-ebs-vol-manager ./coco-ebs-vol-manager volumes find -t coco-environment-tag=${enviorn},LATEST="",store=$serviceId | jq -r '[.Volumes[0].VolumeId]'`
 
 lastDevice=$(ls -1 /dev/xvd* | sort -r | head -1 )
-lastLetter="${disk: -2}"
+lastLetter="${lastDevice: -2}"
 nextLetter=$(echo "$lastLetter" | tr "a-z" "b-za")
 nextDrive="/dev/xvd${nextLetter}"
 
