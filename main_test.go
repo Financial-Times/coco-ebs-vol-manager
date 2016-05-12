@@ -57,7 +57,7 @@ func TestDetachVolShouldExitOnFatal(t *testing.T) {
 	expectedErr := errors.New("Boom")
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, expectedErr)
 
-	err := detachVol(&Ec2Client{m}, &device, &instanceID, &volID)
+	err := detachVol(&Ec2Client{m}, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 
@@ -70,7 +70,7 @@ func TestDetachVol(t *testing.T) {
 
 	m.On("DetachVolume", mock.AnythingOfType("*ec2.DetachVolumeInput")).Return(nil, nil)
 
-	detachVol(&Ec2Client{m}, &device, &instanceID, &volID)
+	detachVol(&Ec2Client{m}, &instanceID, &volID)
 
 	m.AssertExpectations(t)
 	dvi := m.Mock.Calls[0].Arguments.Get(0).(*ec2.DetachVolumeInput)
