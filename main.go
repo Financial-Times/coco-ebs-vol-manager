@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -20,7 +19,21 @@ import (
 )
 
 var (
-	etcdPeers = flag.String("etcdPeers", "", "Comma-separated list of addresses of etcd endpoints to connect to")
+	nought         = "{}"
+	tagOpt         = cli.StringOpt{Name: "t tags", Desc: "A set of comma seperated tags and values", HideValue: true}
+	deviceOpt      = cli.StringOpt{Name: "d device", Desc: "The device path, e.g. /dev/xvdf", HideValue: true}
+	instanceOpt    = cli.StringOpt{Name: "i instanceId", Desc: "AWS instance ID"}
+	volumeOpt      = cli.StringOpt{Name: "v volumeId", Desc: "VolumeID of EBS to attach"}
+	volumeArg      = cli.StringArg{Name: "VOL_ID", Desc: "VolumeID of EBS to attach"}
+	availZoneOpt   = cli.StringOpt{Name: "a availabilityZone", Value: "eu-west-1a", Desc: "Which availability zone the volume should be available in"}
+	snapshotOpt    = cli.StringOpt{Name: "s snapshotId", Desc: "The id of the snapshot to use"}
+	capacityOpt    = cli.IntOpt{Name: "c capacity", Value: 10, Desc: "Capacity of volume in GBs"}
+	ebsTypeOpt     = cli.StringOpt{Name: "t type", Value: "gp2", Desc: "Type of ESB volume"}
+	descriptionOpt = cli.StringOpt{Name: "d description", Desc: "Snapshot description.",
+		Value: fmt.Sprintf("Snapshot of %v created on %v", volumeOpt, time.Now())}
+	resourceArg  = cli.StringArg{Name: "ID", Value: "id12342", Desc: "The resourceId of the resource to be modified"}
+	etcdPeersOpt = cli.StringOpt{Name: "e etcdPeers", Value: "", Desc: "Comma-separated list of addresses of etcd endpoints to connect to"}
+	etcdPeers    = aws.String("")
 )
 
 // Ec2Client is a container for the ec2iface.EC2API
@@ -77,24 +90,10 @@ func newEc2Client() *Ec2Client {
 	return &client
 }
 
-var (
-	tagOpt         = cli.StringOpt{Name: "t tags", Desc: "A set of comma seperated tags and values", HideValue: true}
-	deviceOpt      = cli.StringOpt{Name: "d device", Desc: "The device path, e.g. /dev/xvdf", HideValue: true}
-	instanceOpt    = cli.StringOpt{Name: "i instanceId", Desc: "AWS instance ID"}
-	volumeOpt      = cli.StringOpt{Name: "v volumeId", Desc: "VolumeID of EBS to attach"}
-	volumeArg      = cli.StringArg{Name: "VOL_ID", Desc: "VolumeID of EBS to attach"}
-	availZoneOpt   = cli.StringOpt{Name: "a availabilityZone", Value: "eu-west-1a", Desc: "Which availability zone the volume should be available in"}
-	snapshotOpt    = cli.StringOpt{Name: "s snapshotId", Desc: "The id of the snapshot to use"}
-	capacityOpt    = cli.IntOpt{Name: "c capacity", Value: 10, Desc: "Capacity of volume in GBs"}
-	ebsTypeOpt     = cli.StringOpt{Name: "t type", Value: "gp2", Desc: "Type of ESB volume"}
-	descriptionOpt = cli.StringOpt{Name: "d description", Desc: "Snapshot description.",
-		Value: fmt.Sprintf("Snapshot of %v created on %v", volumeOpt, time.Now())}
-	resourceArg = cli.StringArg{Name: "ID", Value: "id12342", Desc: "The resourceId of the resource to be modified"}
-	nought      = "{}"
-)
-
 func main() {
 	app := cli.App("coco-ebs-vol-manager", "helper programme to manage AWS Elastic Block Storage")
+
+	etcdPeers = app.String(etcdPeersOpt)
 
 	app.Command("volumes", "find, attach and detach volumes", func(cmd *cli.Cmd) {
 		cmd.Command("find", "Find a list of volumeIds based on tag name,value pairs", func(subCmd *cli.Cmd) {
